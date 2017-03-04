@@ -1,3 +1,7 @@
+import tensorflow as tf
+
+tf.python.control_flow_ops = tf
+import prepare
 import argparse
 import base64
 from datetime import datetime
@@ -13,11 +17,39 @@ from flask import Flask
 from io import BytesIO
 
 from keras.models import load_model
+import h5py
+from keras import __version__ as keras_version
 
 sio = socketio.Server()
 app = Flask(__name__)
 model = None
 prev_image_array = None
+
+
+class SimplePIController:
+    def __init__(self, Kp, Ki):
+        self.Kp = Kp
+        self.Ki = Ki
+        self.set_point = 0.
+        self.error = 0.
+        self.integral = 0.
+
+    def set_desired(self, desired):
+        self.set_point = desired
+
+    def update(self, measurement):
+        # proportional error
+        self.error = self.set_point - measurement
+
+        # integral error
+        self.integral += self.error
+
+        return self.Kp * self.error + self.Ki * self.integral
+
+
+controller = SimplePIController(0.1, 0.002)
+set_speed = 15
+controller.set_desired(set_speed)
 
 
 @sio.on('telemetry')
@@ -33,9 +65,16 @@ def telemetry(sid, data):
         imgString = data["image"]
         image = Image.open(BytesIO(base64.b64decode(imgString)))
         image_array = np.asarray(image)
-        steering_angle = float(model.predict(image_array[None, :, :, :], batch_size=1))
-        throttle = 0.2
-        print(steering_angle, throttle)
+
+        # Prepare image as on training
+        image_array,_ = prepare.augment_single_image(image_array, train=False)
+        x = image_array[None, :, :, :]
+
+        steering_angle = float(model.predict(x=x, batch_size=1))
+        throttle = controller.update(float(speed))
+
+        print('Steering angle:', steering_angle, 'throttle:', throttle, 'speed:', speed)
+
         send_control(steering_angle, throttle)
 
         # save frame
@@ -78,7 +117,24 @@ if __name__ == '__main__':
         default='',
         help='Path to image folder. This is where the images from the run will be saved.'
     )
+    parser.add_argument(
+        'speed',
+        type=str,
+        help='Desired speed'
+    )
     args = parser.parse_args()
+
+    # check that model Keras version is same as local Keras version
+    f = h5py.File(args.model, mode='r')
+    model_version = f.attrs.get('keras_version')
+    keras_version = str(keras_version).encode('utf8')
+
+    if args.speed != '':
+        controller.set_desired(float(args.speed))
+
+    if model_version != keras_version:
+        print('You are using Keras version ', keras_version,
+              ', but the model was built using ', model_version)
 
     model = load_model(args.model)
 
