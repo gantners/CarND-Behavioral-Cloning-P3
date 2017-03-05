@@ -10,7 +10,7 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 [image0]: ./models/model_1/model_1_summary.PNG "Model Summary"
-[image1]: ./models/model_1/tb_losses.png "Final loss"
+[image1]: ./models/model_1/tb_losses.PNG "Final loss"
 [image2]: ./models/model_1/equalized_shadowed.PNG "Equalized with shadows"
 [image3]: ./models/model_1/high_validation_loss.png "High validation loss"
 [image4]: ./models/model_1/cropping.PNG "Image Cropping"
