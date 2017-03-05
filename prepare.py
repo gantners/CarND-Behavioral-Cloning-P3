@@ -123,7 +123,7 @@ def resize_image(img, h, w):
     """
     return cv2.resize(img, (w, h), interpolation=cv2.INTER_AREA)
 
-
+# method to shift images taken from udacity member vivek yadav
 def shift_img(image, steer):
     """
     randomly shift image horizontally
