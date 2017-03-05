@@ -11,13 +11,14 @@ The goals / steps of this project are the following:
 [//]: # (Image References)
 [image0]: ./models/model_1/model_1_summary.PNG "Model Summary"
 [image1]: ./models/model_1/tb_losses.png "Final loss"
-[image2]: ./models/model_1/equalized_shadowed.png "Equalized with shadows"
+[image2]: ./models/model_1/equalized_shadowed.PNG "Equalized with shadows"
 [image3]: ./models/model_1/high_validation_loss.png "High validation loss"
-[image4]: ./models/model_1/cropping.png "Image Croppoing"
-[image5]: ./models/model_1/flipped.png "Flip Image"
-[image6]: ./models/model_1/shifted.png "Shift Image"
-[image7]: ./models/model_1/hueadjusted.png "Hue adjusted"
-[image8]: ./models/model_1/shadowed.png "Shadowed image"
+[image4]: ./models/model_1/cropping.PNG "Image Cropping"
+[image5]: ./models/model_1/flipped.PNG "Flip Image"
+[image6]: ./models/model_1/shifted.PNG "Shift Image"
+[image7]: ./models/model_1/hueadjusted.PNG "Hue adjusted"
+[image8]: ./models/model_1/shadowed.PNG "Shadowed image"
+[image9]: ./models/model_1/model_1_hist.jpg "Steering Histogram"
 
 
 ## Rubric Points
@@ -126,6 +127,13 @@ drive the track in a way that i good continous steering result on lots of small 
 
 Creating recovery images from off track on the road again was in my set not necessary for track one. Instead i cherry picked good steering angles for the weak spots
 and added them to the training data.
+
+To prevent biasing of bad angles like zero, ones or lots of the same steering angles sequentially i added a queue of
+5 which discards the same values after the fifth same appearance. Also I set the threshold of zeroes to a maximum of the 
+second highest other steering angle which lead to the following final steering histogram:
+
+![Steering histogram][image9]
+
 
 To augment the data set, i randomly flipped the images and measurements as well as shifted them vertically or taking left or right camera image instead
 of center images. when taking left or right camera images, the steering angle has been corrected by a value of 0.25 for right images and -0.25 for left images.
