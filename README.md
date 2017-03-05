@@ -43,7 +43,7 @@ My project includes the following files:
 * video.py for generating videos from recorded autonomous driving images
 * evaluate.py for running the conv_layer visualizations
 * generator.py the generator class for training and validation set
-* writeup_report.md this file - summarizing the results
+* README.md this file - summarizing the results
 
 Some files are only for experimental uses like conv_visualization.py/visual.py
 
