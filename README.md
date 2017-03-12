@@ -36,7 +36,7 @@ My project includes the following files:
 * drive.py for driving the car in autonomous mode
 * model_1.h5 containing a trained convolution neural network
 * model_1_weights.h5 the weights from the trained cnn
-* model_1.mp4 record of driving track1 2 rounds in autonomous mode
+* records/model_1.mp4 record of driving track1 2 rounds in autonomous mode on fastest display mode
 * prepare.py a class for reading and preprocessing images
 * visual.py a helper class for visualizing results
 * conv_visualization a class for generating activation images for layers
@@ -53,7 +53,7 @@ Using the Udacity provided simulator and my drive.py file, the car can be driven
 python drive.py models\model_1\model_1.h5 30
 ```
 
-The quality chosen was fastest in window mode on 1280x960 display size. Steering speed desired was set to 30.
+The quality used was fastest in window mode on 1280x960 display size. Steering speed desired was set to 30.
 
 ####3. Submission code is usable and readable
 
@@ -137,8 +137,7 @@ Doing so with the keyboard or gamecontroller failed badly as the steering angle 
 in the end the most important point of the whole project. Only using the mouse steering control on the beta simulator let me 
 drive the track in a way that i good continous steering result on lots of small degree steps
 
-Creating recovery images from off track on the road again was in my set not necessary for track one. Instead i cherry picked good steering angles for the weak spots
-and added them to the training data.
+Creating recovery images from off track on the road again was essential to keep the car on the road at the weak spots.
 
 To prevent biasing of bad angles like zero, ones or lots of the same steering angles sequentially i added a queue of
 8 which discards the same values after the eigth's same appearance. Also I set the threshold of zeroes to a maximum of the 
@@ -150,7 +149,7 @@ second highest other steering angle which lead to the following final steering h
 To augment the data set, i randomly flipped the images and measurements as well as shifted them vertically or taking left or right camera image instead
 of center images. when taking left or right camera images, the steering angle has been corrected by a value of 0.25 for right images and -0.25 for left images.
 
-Example of cropping the image from 160x320 to 66x200:
+Example of cropping the image from 160x320 to 100x320:
 
 ![Cropping][image4]
 
@@ -180,7 +179,7 @@ even on my gtx 1080. Also i resized the images to 100x320.
 I finally randomly shuffled the data set and put 0.2 of the data into a validation set. 
 
 I used this training data for training the model. The validation set helped determine if the model was over or under fitting. 
-The ideal number of epochs was 2 as evidenced by an introduced early stopping layer with patience 1. Each epoch was trained on 20480 samples.
+The ideal number of epochs was 9 as evidenced by an introduced early stopping layer with patience 3. Each epoch was trained on 4096 samples.
 
 I used an adam optimizer so that manually training the learning rate wasn't necessary.
 
@@ -189,4 +188,6 @@ The model is unfortunately so big that the tensorboard dashboard was not able to
 
 To get always the best checkpoint i added a checkpoint callback which always compared the current with the last run and saved the best out of it, as
 well as a checkpoint file in addition to the best fit.
+
+For the future i could add more recovery samples to be more robust on different hardware and display settings as well to stay more smooth on the road.
 
