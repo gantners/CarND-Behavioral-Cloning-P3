@@ -6,7 +6,7 @@ from __future__ import print_function
 from keras.models import Sequential
 from keras.layers.core import Dense, Activation, Flatten, Dropout, Lambda, Merge
 from keras.layers.convolutional import Convolution2D, Cropping2D
-from keras.layers import Input, merge, ELU, K, BatchNormalization
+from keras.layers import Input, merge, ELU, K, BatchNormalization, MaxPooling2D
 from keras.models import load_model
 from scipy.misc import imsave
 import numpy as np
@@ -139,13 +139,16 @@ def try_nvidia(path, shape=(160, 320, 3)):
     # this is a placeholder tensor that will contain our generated images
     input_img = first_layer.input
 
-    model.add(BatchNormalization(mode=0, axis=3, name='BN0'))
-    model.add(Convolution2D(24, 5, 5, init='glorot_uniform', subsample=(2, 2), activation='relu', name='Conv1'))
-    model.add(BatchNormalization(mode=0, axis=3, name='BN1'))
-    model.add(Convolution2D(36, 5, 5, init='glorot_uniform', subsample=(2, 2), activation='relu', name='Conv2'))
-    model.add(Convolution2D(48, 5, 5, init='glorot_uniform', subsample=(2, 2), activation='relu', name='Conv3'))
-    model.add(Convolution2D(64, 3, 3, init='glorot_uniform', subsample=(1, 1), activation='relu', name='Conv4'))
-    model.add(Convolution2D(64, 3, 3, init='glorot_uniform', subsample=(1, 1), activation='relu', name='Conv5'))
+    model.add(Convolution2D(24, 5, 5, border_mode='same', subsample=(2, 2), activation='elu', name='Conv1'))
+    model.add(MaxPooling2D(pool_size=(2, 2), border_mode='same'))
+    model.add(Convolution2D(36, 5, 5, border_mode='same', subsample=(2, 2), activation='elu', name='Conv2'))
+    model.add(MaxPooling2D(pool_size=(2, 2), border_mode='same'))
+    model.add(Convolution2D(48, 5, 5, border_mode='same', subsample=(2, 2), activation='elu', name='Conv3'))
+    model.add(MaxPooling2D(pool_size=(2, 2), border_mode='same'))
+    model.add(Convolution2D(64, 3, 3, border_mode='same', subsample=(1, 1), activation='elu', name='Conv4'))
+    model.add(MaxPooling2D(pool_size=(2, 2), border_mode='same'))
+    model.add(Convolution2D(64, 3, 3, border_mode='same', subsample=(1, 1), activation='elu', name='Conv5'))
+    model.add(MaxPooling2D(pool_size=(2, 2), border_mode='same'))
     model.summary()
 
     # util function to convert a tensor into a valid image
@@ -196,7 +199,7 @@ def try_rambo2(path, shape=(160, 320, 3)):
     for layer_name in layer_names:
         visualizeLayers(layer_name, model, input_img, path, shape)
 
-try_nvidia('report/model_1/', shape=(66, 200, 3))
+try_nvidia('report/model_1/', shape=(100, 320, 3))
 # try_rambo1('report/model_2/',shape=(100, 320, 3))
 # try_rambo2('report/model_2/',shape=(100, 320, 3))
 

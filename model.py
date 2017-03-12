@@ -29,26 +29,26 @@ driving_log_name = 'driving_log.csv'
 
 # recorded training data
 image_data_track1 = ['./data/udacity/', './data/track1/', './data/track1-1/', './data/track1-2/',
-                     './data/track1-3/']  # racetrack
+                     './data/track1-3/','./data/track1-4/','./data/track1-5/']  # racetrack
 image_data_track2 = ['./data/track2/', './data/track2-1/', './data/track2-2/', './data/track2-3/',
                      './data/track2-4/']  # jungle
 image_data_track3 = ['./data/track3-1/', './data/track3-2/']  # hill
 
 # final shape of the input images
-shape = (66, 200, 3)
-
+shape = (100, 320, 3)
 # Model Configuration
-
 # batch size
 batch_size = 128
 # classes == 1 as only steering angle to predict
 nb_classes = 1
 # epoch size to run
-nb_epoch = 3
+nb_epoch = 10
 # number o
-samples_per_epoch = 20480
+samples_per_epoch = 4096
 # percentage of validation set
 validation_split = 0.2
+#patience for early stopping
+patience=3
 # model config
 name = 'model_1'
 model_dir = 'models/' + name
@@ -75,6 +75,8 @@ if mode == 'train':
     #prep2 = prepare.Prepare(image_data_track1[2], driving_log_name)
     #prep3 = prepare.Prepare(image_data_track1[3], driving_log_name)
     prep4 = prepare.Prepare(image_data_track1[4], driving_log_name)
+    prep12 = prepare.Prepare(image_data_track1[5], driving_log_name)
+    #prep13 = prepare.Prepare(image_data_track1[6], driving_log_name)
 
     # prep5 = prepare.Prepare(image_data_track2[0], driving_log_name) #bad
     # prep6 = prepare.Prepare(image_data_track2[1], driving_log_name) #bad
@@ -87,7 +89,7 @@ if mode == 'train':
 
     # Merge multiple preparation sets
     # track 1
-    prep = prepare.merge([prep,prep4])
+    prep = prepare.merge([prep,prep12,prep4])
     # prep = prepare.merge([prep])
     # track 2
     # prep = prepare.merge([prep6,prep7])
@@ -99,7 +101,7 @@ if mode == 'train':
     visual.draw_hist(prep.steering, draw=False, file=model_base + '_hist.jpg')
 
     # split dataset in test and validation set
-    prep_val = prepare.get_validation_prep(prep, percentage=0.2)
+    prep, prep_val = prepare.get_validation_prep(prep, percentage=validation_split)
     print('Validation set splitted.')
 
     # keras test generator
@@ -113,8 +115,8 @@ if mode == 'train':
     # Checkpoint callback - Save the model after each epoch if the validation loss improved.
     save_best = ModelCheckpoint(checkpoint, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
 
-    # Early Stopping callback - stop training if the validation loss doesn't improve for 1 consecutive epochs.
-    early_stop = EarlyStopping(monitor='val_loss', min_delta=0, patience=1, verbose=1, mode='auto')
+    # Early Stopping callback - stop training if the validation loss doesn't improve for patience consecutive epochs.
+    early_stop = EarlyStopping(monitor='val_loss', min_delta=0, patience=patience, verbose=1, mode='auto')
 
     # draw_weights = DrawWeights(figsize=(4, 4), layer_id=5, param_id=0)
 

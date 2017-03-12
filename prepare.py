@@ -21,7 +21,7 @@ def add_random_shadow(image, min_alpha=0.5, max_alpha=0.75):
     shadow_img = image.copy()
     if coin == 0:
         rand = np.random.randint(2)
-        vertices = np.array([[(50, 65), (45, 0), (145, 0), (150, 65)]], dtype=np.int32)
+        vertices = np.array([[(50, 35), (45, 0), (145, 0), (150, 35)]], dtype=np.int32)
         if rand == 0:
             vertices = np.array([[top_x, 0], [0, 0], [0, rows], [bottom_x, rows]], dtype=np.int32)
         elif rand == 1:
@@ -35,17 +35,13 @@ def add_random_shadow(image, min_alpha=0.5, max_alpha=0.75):
     return shadow_img
 
 
-# method to adjust_hue taken from udacity member vivek yadav
 def adjust_hue(image):
-    """
-    Adjust the hue value of an image by random uniform distributed values
-    :param image:
-    :return: original image with random hue modifications
-    """
-    hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
-    hsv[:, :, 2] = hsv[:, :, 2] * .25 + np.random.uniform()
-    rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
-    return rgb
+    br_img = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+    if np.random.randint(2) == 0:
+        random_bright = 0.2 + np.random.uniform(0.2, 0.6)
+        br_img[:, :, 2] = br_img[:, :, 2] * random_bright
+    br_img = cv2.cvtColor(br_img, cv2.COLOR_HSV2RGB)
+    return br_img
 
 
 def equalizeHist_color(img):
@@ -84,6 +80,25 @@ def equalizeHist_gray(img):
     hist = cv2.equalizeHist(cl)
     return hist[:, :, np.newaxis]
 
+def color_select(image, channel=0, thresh=(200, 255), color_space=None):
+    """
+    The R channel does a reasonable job of highlighting the lines, and you can apply a similar threshold to find lane-line pixels:
+    The S channel picks up the lines well, so let's try applying a threshold there:
+    You can also see that in the H channel, the lane lines appear dark
+    :param image:
+    :param channel:
+    :param thresh:
+    :param color_space:
+    :return:
+    """
+    if color_space is not None:
+        img = cv2.cvtColor(image, color_space)
+    else:
+        img = image
+    space = img[:, :, channel]
+    binary_color = np.zeros_like(space)
+    binary_color[(space > thresh[0]) & (space <= thresh[1])] = 1
+    return space,binary_color
 
 def crop_to_ROI(img, h, w, y, x):
     """
@@ -107,10 +122,8 @@ def crop_img(image):
     """ crop unnecessary parts """
     cropped_img = crop_to_ROI(image, 100, 320, 40, 0)
     #visual.draw(cropped_img,title='cropped image')
-    resized_img = resize_image(cropped_img, 66, 200)
-    #img = cv2.cvtColor(resized_img, cv2.COLOR_BGR2RGB)
-    #visual.draw(resized_img, title='resized to nvidia')
-    return resized_img
+    #resized_img = resize_image(cropped_img, 64, 64)
+    return cropped_img
 
 
 def resize_image(img, h, w):
@@ -122,6 +135,7 @@ def resize_image(img, h, w):
     :return: resized image
     """
     return cv2.resize(img, (w, h), interpolation=cv2.INTER_AREA)
+
 
 # method to shift images taken from udacity member vivek yadav
 def shift_img(image, steer):
@@ -141,7 +155,7 @@ def shift_img(image, steer):
     dst_img = cv2.warpAffine(image, mat, (cols, rows))
     return dst_img, dst_steer
 
-
+import matplotlib.pyplot as plt
 def augment_single_image(image, measurement=None, train=True):
     """
     Apply augmentation functions to a single image
@@ -150,32 +164,35 @@ def augment_single_image(image, measurement=None, train=True):
     :param train: Enable or disable augmentation for training, validation
     :return:
     """
+    to_augment = np.copy(image)
     # Crop image
-    # image = crop_to_ROI(image, 100, 320, 40, 0)
-    image = crop_img(image)
+    # image = crop_to_ROI(to_augment, 100, 320, 40, 0)
+    cropped = crop_img(to_augment)
 
-    ai = None
-    am = None
+    augmented_image = None
+    augmented_measurement = None
 
     # train only
     if train:
-        image = adjust_hue(image)
-        image = add_random_shadow(image)
-        image = equalizeHist_color(image)
+        hued = adjust_hue(cropped)
+        shadowed = add_random_shadow(hued)
+        hist = equalizeHist_color(shadowed)
+        #hist = shadowed
 
         r = random.randint(0, 2)
         # Flip
         if r == 0:
-            ai, am = flip(image, measurement)
+            augmented_image, augmented_measurement = flip(hist, measurement)
+        #shift
         elif r == 1:
-            ai, am = shift_img(image, measurement)
+            augmented_image, augmented_measurement = shift_img(hist, measurement)
         # normal
         else:
-            ai, am = image, measurement
+            augmented_image, augmented_measurement = hist, measurement
     else:
-        ai, am = image, measurement
+        augmented_image, augmented_measurement = cropped, measurement
 
-    return ai, am
+    return augmented_image, augmented_measurement
 
 
 def augment_images(images, measurements, train=True):
@@ -190,26 +207,8 @@ def augment_images(images, measurements, train=True):
 
 def flip(image, measurement):
     ai = cv2.flip(image, 1)
-    am = float(measurement) * - 1.0
+    am = float(-measurement)
     return ai, am
-
-
-def add_flipped_images(images, measurements):
-    """
-    Flip image and measurement
-    :param images:
-    :param measurements:
-    :return:
-    """
-    flipped_images = []
-    flipped_measurements = []
-    for image, measurement in zip(images, measurements):
-        ai, am = flip(image, measurement)
-        flipped_images.append(ai)
-        flipped_measurements.append(am)
-
-    print('Flipping done for', len(images))
-    return images + flipped_images, measurements + flipped_measurements
 
 
 def reduce(arr, size):
@@ -280,12 +279,14 @@ class Prepare:
 
         current_zero_count = 0
         prev_steering = []
-        # discard if x number of same steering values appeared
-        stop_adding_after = 5
+        # discard if x number of same steering values appeared in a row
+        stop_adding_after = 8
 
         discarded = []
         for i in range(length):
             steering_angle = driving_log['steering'][i]
+            #if steering_angle == 0.0 and random.randint(0,10) > 0:
+                #continue
 
             prev_steering.append(steering_angle)
             if len(prev_steering) == stop_adding_after + 1:
@@ -293,7 +294,7 @@ class Prepare:
 
             # Check if we had x times the same steering value
             all_same = all(prev_steering[0] == item for item in prev_steering) and len(
-                prev_steering) >= stop_adding_after
+                prev_steering) >= stop_adding_after and steering_angle == 0.0
 
             current_zero_count = list(steering).count(0.0)
 
@@ -313,12 +314,12 @@ class Prepare:
             brakes.append(driving_log['brake'][i])
             speeds.append(driving_log['speed'][i])
 
+        # print('Final count:', len(steering), 'vs', length, ', discarded:', len(discarded), ',Zero count:', current_zero_count)
+
         self.images_left = images_left
         self.images_center = images_center
         self.images_right = images_right
         self.steering = steering
-        print('Final count:', len(steering), 'vs', length, ', discarded:', len(discarded), ',Zero count:',
-              current_zero_count)
         self.throttles = throttles
         self.brakes = brakes
         self.speeds = speeds
@@ -335,55 +336,55 @@ def augment_and_build_all(prep: Prepare, batch_size, train=True):
     # Read a batch size of images in
     assert batch_size < len(prep.images_center)
 
-    left = prep.images_left
-    right = prep.images_right
-    center = prep.images_center
-    steering = prep.steering
-
     # Shuffle
     if train:
-        left, center, right, steering = shuffle(left, center, right, steering)
-        # Get a batch of current
-        bil, bic, bir, bs = left[0:batch_size], center[0:batch_size], right[0:batch_size], steering[0:batch_size]
+        left, center, right, steering = shuffle(prep.images_left, prep.images_center, prep.images_right, prep.steering,
+                                                n_samples=batch_size)
     else:
-        center, steering = shuffle(center, steering)
-        # Get a batch of current
-        bic, bs = center[0:batch_size], steering[0:batch_size]
+        center, steering = shuffle(prep.images_center, prep.steering, n_samples=batch_size)
 
     images = []
     measurements = []
     correction = 0.25
 
-    for i in range(batch_size):
-        bi = None
-        bm = None
+    count_left = 0
+    count_center = 0
+    count_right = 0
 
+    for i in range(batch_size):
         if train:
             r = random.randint(0, 2)
-            # Shift
             # left
             if r == 0:
-                bi = cv2.imread(bil[i])
-                bm = bs[i] + correction
+                chosen_image = left[i]
+                chosen_measurement = steering[i] + correction
+                count_left += 1
             # right
             elif r == 1:
-                bi = cv2.imread(bir[i])
-                bm = bs[i] - correction
+                chosen_image = right[i]
+                chosen_measurement = steering[i] - correction
+                count_right += 1
             # normal
             else:
-                bi = cv2.imread(bic[i])
-                bm = bs[i]
+                chosen_image = center[i]
+                chosen_measurement = steering[i]
+                count_center += 1
         else:
-            bi = cv2.imread(bic[i])
-            bm = bs[i]
+            chosen_image = center[i]
+            chosen_measurement = steering[i]
+            count_center += 1
 
-        images.append(bi)
-        measurements.append(bm)
+        images.append(cv2.imread(chosen_image))
+        measurements.append(chosen_measurement)
 
+    #print(
+       # 'Generated(batch_size:{0},train:{1}): Left: {2}, Center: {3}, Right: {4}'.format(batch_size, train, count_left,
+                                                                                         #count_center,
+                                                                                         #count_right))
     # Augment images
-    ai, am = augment_images(images, measurements, train)
+    augmented_images, augmented_measurement = augment_images(images, measurements, train)
 
-    return ai, am
+    return augmented_images, augmented_measurement
 
 
 def merge(prep_list: [Prepare]):
@@ -415,7 +416,7 @@ def shuffle_prepare(prep: Prepare):
     return prep
 
 
-def get_validation_prep(prep: Prepare, percentage) -> Prepare:
+def get_validation_prep(prep: Prepare, percentage):
     """
     Split data set by percentage into 1-percentage test set and percentage validation set
     :param prep: Prepare object to split
@@ -450,4 +451,4 @@ def get_validation_prep(prep: Prepare, percentage) -> Prepare:
     print(len(val.images_center), '+', len(prep.images_center), '=', total)
     assert len(val.images_center) + len(prep.images_center) == total
 
-    return val
+    return prep, val
