@@ -64,7 +64,7 @@ The file shows the pipeline I used for training and validating the model, and it
 
 ####1. An appropriate model architecture has been employed
 
-My model is based on the nvidia model and consists of a 5 convolutional layers where 3 with 5x5 filters and strides 2 as well as 2 with 3x3 filters with strides 1. sizes and depths were in order 24,36,48,64,64 (my_model.py lines 70,72,74,76,78) 
+My model is based on the nvidia model and consists of a 5 convolutional layers where 3 with 5x5 filters and strides 2 as well as 2 with 3x3 filters with strides 1. sizes were in order 24,36,48,64,64 (my_model.py lines 70,72,74,76,78) 
 The initialization uses per default glorot_uniform.
 
 The model includes ELU activation layers after each layer to speed up learning based on following a discussion on [ML Reddit](https://www.reddit.com/r/MachineLearning/comments/3u6ppw/exponential_linear_units_yielded_the_best/?st=izx2u5u9&sh=010a4b84)
@@ -77,7 +77,7 @@ The data is normalized in the model using a Keras lambda layer (my_model.py code
 Instead of dropout layers i used batch normalization on channels axis for the first two convolutional layers to make the network more robust to bad initialization.
 This has been later reversed in favor to make the network more robust against overfitting and resulted in a more stable model.
 
-The convolutional layers are followed by 5 fully connected layers with depths 1164,100,50,10,1.
+The convolutional layers are followed by 5 fully connected layers with sizes 1164,100,50,10,1.
 
 ####2. Attempts to reduce overfitting in the model
 
